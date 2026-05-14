@@ -17,6 +17,11 @@ npm run lint
 npm run build
 ```
 
+## Whitepapers
+
+- [中文白皮书](docs/whitepaper.zh-CN.md)
+- [English whitepaper](docs/whitepaper.en-US.md)
+
 ## Current Scope
 
 - Local deterministic agent for demo reliability.
