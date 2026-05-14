@@ -154,11 +154,28 @@
 **描述：** 编写最小 Arc Testnet 合约，只记录 trace hash、signal ID、publisher 和 URI。
 
 **验收标准：**
-- [ ] 合约测试覆盖事件写入
-- [ ] 部署脚本不包含私钥
-- [ ] UI 能展示交易哈希和 explorer 链接
+- [x] 合约测试覆盖 ABI、事件、输入校验和 append-only 约束
+- [x] 部署路径不包含私钥，使用浏览器钱包显式签名
+- [x] UI 能展示交易哈希和 explorer 链接
+- [x] HTTP 裸 IP 环境也能生成标准 SHA-256 `bytes32` trace hash
 
 **依赖：** 钱包、测试网 USDC/gas、用户确认签名
+
+**验证：**
+- [x] `npm run contracts:compile`
+- [x] `npm test`
+- [x] `npm run lint`
+- [x] `npm run build`
+
+**文件：**
+- `contracts/TraceAnchor.sol`
+- `contracts/TraceAnchor.test.mjs`
+- `scripts/compile-contracts.mjs`
+- `src/contracts/traceAnchor.ts`
+- `src/lib/traceAnchor.ts`
+- `src/lib/traceAnchor.test.ts`
+- `src/lib/sha256.ts`
+- `src/lib/sha256.test.ts`
 
 ### Task 7：钱包连接和用户确认流
 
@@ -169,7 +186,8 @@
 - [x] 钱包未连接时可以继续本地保存
 - [x] 可检测 EIP-1193 钱包并在用户点击后连接
 - [x] 可请求钱包切换或添加 Arc Testnet
-- [ ] 链上写入前展示清晰确认内容
+- [x] 链上写入前展示清晰确认内容
+- [x] 只有用户点击确认后才调用 `eth_sendTransaction`
 
 **验证：**
 - [x] `npm test`
@@ -180,6 +198,8 @@
 **文件：**
 - `src/lib/wallet.ts`
 - `src/lib/wallet.test.ts`
+- `src/components/TraceAnchorPanel.tsx`
+- `src/lib/traceAnchor.ts`
 - `src/App.tsx`
 - `src/App.css`
 

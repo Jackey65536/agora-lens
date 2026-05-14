@@ -146,7 +146,21 @@ textarea {
   width: 100%;
 }
 
+input {
+  background: #ffffff;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--ink);
+  font: inherit;
+  min-height: 42px;
+  min-width: 0;
+  padding: 10px 12px;
+  width: 100%;
+}
+
 textarea:focus,
+input:focus,
 button:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
@@ -186,6 +200,10 @@ button:focus-visible {
 }
 
 .secondary-action.full {
+  width: 100%;
+}
+
+.primary-action.full {
   width: 100%;
 }
 
@@ -453,6 +471,61 @@ button:focus-visible {
   gap: 10px;
 }
 
+.trace-anchor-card {
+  display: grid;
+  gap: 10px;
+}
+
+.input-label.compact {
+  margin-bottom: 0;
+}
+
+.contract-row {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.confirm-box {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.confirm-box dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.confirm-box dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.confirm-box dd {
+  color: var(--ink);
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.archive-status.saved {
+  display: grid;
+  gap: 6px;
+}
+
+.archive-status.saved a {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  gap: 6px;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -498,5 +571,9 @@ button:focus-visible {
   .wallet-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .contract-row {
+    grid-template-columns: 1fr;
   }
 }

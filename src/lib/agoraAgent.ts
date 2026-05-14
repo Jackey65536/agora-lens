@@ -1,3 +1,5 @@
+import { sha256Hex } from './sha256'
+
 export type SignalSource = 'news' | 'social' | 'research' | 'manual'
 
 export interface MarketSignal {
@@ -57,8 +59,6 @@ export interface MarketBrief {
   agentSteps: AgentStep[]
   evidencePacket: EvidencePacket
 }
-
-const HASH_UNAVAILABLE_PREFIX = '0xfallback'
 
 export const sampleSignals: MarketSignal[] = [
   {
@@ -207,7 +207,8 @@ export function stableStringify(value: unknown): string {
 }
 
 async function hashEvidence(payload: EvidencePacket['payload']): Promise<string> {
-  const data = new TextEncoder().encode(stableStringify(payload))
+  const serialized = stableStringify(payload)
+  const data = new TextEncoder().encode(serialized)
 
   if (globalThis.crypto?.subtle) {
     const digest = await globalThis.crypto.subtle.digest('SHA-256', data)
@@ -216,7 +217,7 @@ async function hashEvidence(payload: EvidencePacket['payload']): Promise<string>
       .join('')}`
   }
 
-  return fallbackHash(stableStringify(payload))
+  return `0x${sha256Hex(serialized)}`
 }
 
 function createThesis(text: string, language: string, category: string): string {
@@ -339,13 +340,4 @@ function buildAgentSteps(language: string, category: string, probability: number
       status: 'watch',
     },
   ]
-}
-
-function fallbackHash(input: string): string {
-  let hash = 2166136261
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index)
-    hash = Math.imul(hash, 16777619)
-  }
-  return `${HASH_UNAVAILABLE_PREFIX}${Math.abs(hash).toString(16).padStart(56, '0')}`
 }

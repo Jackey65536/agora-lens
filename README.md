@@ -71,11 +71,32 @@ Arc Testnet parameters:
 - Currency symbol: `USDC`
 - Explorer: `https://testnet.arcscan.app`
 
+## Trace Anchoring
+
+Compile the Solidity contract and regenerate the frontend artifact:
+
+```bash
+npm run contracts:compile
+```
+
+The contract source is `contracts/TraceAnchor.sol`. It records one append-only
+anchor per trace hash:
+
+- `traceHash`: SHA-256 evidence digest from the agent packet
+- `signalId`: SHA-256 digest of the source signal ID
+- `publisher`: wallet address that signed the transaction
+- `uri`: saved brief/share URL or other offchain trace pointer
+
+The frontend can ask the connected wallet to deploy `TraceAnchor` or submit
+`anchorTrace(bytes32,bytes32,string)`. Both paths require an explicit wallet
+transaction confirmation from the user.
+
 ## Verification
 
 ```bash
 npm test
 npm run lint
+npm run contracts:compile
 npm run build
 ```
 
@@ -88,4 +109,4 @@ npm run build
 
 - Local deterministic agent for demo reliability.
 - No real trades, funds, wallets, or private keys.
-- Evidence packet includes an Arc testnet chain ID and SHA-256 trace hash ready for later onchain anchoring.
+- Evidence packet includes an Arc testnet chain ID and SHA-256 trace hash ready for onchain anchoring.

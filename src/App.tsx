@@ -14,6 +14,7 @@ import {
   Sparkles,
   Wallet,
 } from 'lucide-react'
+import { TraceAnchorPanel } from './components/TraceAnchorPanel'
 import { analyzeSignal, sampleSignals, type MarketBrief, type MarketSignal } from './lib/agoraAgent'
 import { briefIdFromSearch, loadBriefArchive, saveBriefArchive, shareUrlForBrief } from './lib/briefArchive'
 import {
@@ -457,6 +458,13 @@ function App() {
                   )}
                 </div>
               </div>
+
+              <TraceAnchorPanel
+                archiveShareUrl={archiveState.status === 'saved' ? archiveState.shareUrl : null}
+                brief={brief}
+                signal={briefSignal}
+                walletState={walletState}
+              />
             </>
           ) : (
             <div className="empty-state">Evidence packet appears after agent output.</div>
