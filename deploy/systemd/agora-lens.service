@@ -1,0 +1,21 @@
+[Unit]
+Description=Agora Lens web and API service
+Documentation=https://github.com/Jackey65536/agora-lens
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/jackey/apps/agora-lens/current
+Environment=NODE_ENV=production
+Environment=PORT=18080
+Environment=AGORA_LENS_DATA_DIR=/home/jackey/apps/agora-lens/data
+Environment=AGORA_LENS_DIST_DIR=/home/jackey/apps/agora-lens/current/dist
+Environment=AGORA_LENS_MAX_BODY_BYTES=262144
+ExecStart=/usr/bin/node /home/jackey/apps/agora-lens/current/server/index.mjs
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,8 +1,8 @@
 # Agora Lens 真实可用实施计划
 
-版本：0.2
+版本：0.3
 日期：2026-05-14
-状态：阶段 1 已完成，进入阶段 2 准备
+状态：阶段 1 已完成，阶段 2 的服务化部署已完成
 
 ## 目标
 
@@ -95,13 +95,21 @@
 **描述：** 用 systemd 或 PM2 管理 Node 服务，替代 `nohup + python http.server`。
 
 **验收标准：**
-- [ ] 服务重启后自动恢复
-- [ ] 日志可查询
-- [ ] 部署脚本可以 build、上传、reload
+- [x] 服务重启后自动恢复
+- [x] 日志可查询
+- [x] 部署脚本可以 build、上传、reload
 
 **验证：**
-- [ ] `systemctl status agora-lens` 或 `pm2 status`
-- [ ] 重启服务后外网 Demo 正常
+- [x] `systemctl status agora-lens` 或 `pm2 status`
+- [x] 重启服务后外网 Demo 正常
+
+**文件：**
+- `deploy/systemd/agora-lens.service`
+- `scripts/deploy-server.sh`
+- `README.md`
+
+**当前状态：** 已安装为 `jackey` 用户级 systemd 服务 `agora-lens.service`，并启用
+`loginctl enable-linger jackey`。已通过 SIGKILL 主进程验证 `Restart=always` 会自动拉起。
 
 ### Task 5：Nginx、域名和 HTTPS
 
@@ -113,6 +121,9 @@
 - [ ] HTTPS 证书可自动续期
 
 **依赖：** 用户提供域名或确认使用现有域名
+
+**当前状态：** 服务器已有 Nginx 并监听 80/443，但当前还没有项目域名；裸 IP HTTPS
+不能申请正常浏览器信任的证书。下一步需要先提供域名并完成 DNS 解析。
 
 ## 阶段 3：Arc Testnet 证据锚定
 

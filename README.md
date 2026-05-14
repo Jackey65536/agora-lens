@@ -25,6 +25,29 @@ The server exposes:
 - `GET /api/briefs/:id`
 - `GET /api/briefs`
 
+## Deployment
+
+Deploy to the current hackathon server:
+
+```bash
+./scripts/deploy-server.sh
+```
+
+The script runs tests, lint, and build, uploads a release archive to
+`/home/jackey/apps/agora-lens/releases/<timestamp>`, updates the `current`
+symlink, and restarts the user-level systemd service.
+
+Operational commands on the server:
+
+```bash
+systemctl --user status agora-lens
+journalctl --user -u agora-lens -n 100 --no-pager
+systemctl --user restart agora-lens
+```
+
+The current production URL is `http://60.204.151.206:18080/`. HTTPS requires a
+domain pointed at the server before certificate automation can be enabled.
+
 ## Verification
 
 ```bash
