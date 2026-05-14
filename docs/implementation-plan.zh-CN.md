@@ -158,6 +158,7 @@
 - [x] 部署路径不包含私钥，使用浏览器钱包显式签名
 - [x] UI 能展示交易哈希和 explorer 链接
 - [x] HTTP 裸 IP 环境也能生成标准 SHA-256 `bytes32` trace hash
+- [x] Arc Testnet 已完成一次真实部署和一次真实 trace anchoring
 
 **依赖：** 钱包、测试网 USDC/gas、用户确认签名
 
@@ -166,6 +167,14 @@
 - [x] `npm test`
 - [x] `npm run lint`
 - [x] `npm run build`
+- [x] `eth_getCode(0x19b8ea4ac5be5f6b4c4c86f874a911f80978c506)` 返回合约 bytecode
+- [x] `isAnchored(0x9dd8004651df6deeae006b333f8702cdab7726dc23dc0d5aebdab3b62004cdc2)` 返回 `true`
+
+**Arc Testnet 实测记录：**
+- 合约地址：`0x19b8ea4ac5be5f6b4c4c86f874a911f80978c506`
+- 部署交易：`https://testnet.arcscan.app/tx/0x08548941b9392f92c96918d5abc7e88ef8ca2da7817359091de8b22cabab1c83`
+- 首次锚定交易：`https://testnet.arcscan.app/tx/0x61dc72ce8f900c1b38b0f1de3bf9dc697055b7d14e6a6a672c6a63791a075368`
+- 首次锚定 brief：`http://60.204.151.206:18080/?brief=brief_20260514170832_e7433097`
 
 **文件：**
 - `contracts/TraceAnchor.sol`
@@ -176,6 +185,7 @@
 - `src/lib/traceAnchor.test.ts`
 - `src/lib/sha256.ts`
 - `src/lib/sha256.test.ts`
+- `.env.production`
 
 ### Task 7：钱包连接和用户确认流
 

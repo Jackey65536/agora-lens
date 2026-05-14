@@ -91,6 +91,14 @@ The frontend can ask the connected wallet to deploy `TraceAnchor` or submit
 `anchorTrace(bytes32,bytes32,string)`. Both paths require an explicit wallet
 transaction confirmation from the user.
 
+Current Arc Testnet deployment:
+
+- Contract: `0x19b8ea4ac5be5f6b4c4c86f874a911f80978c506`
+- Deploy tx: `https://testnet.arcscan.app/tx/0x08548941b9392f92c96918d5abc7e88ef8ca2da7817359091de8b22cabab1c83`
+- First anchor tx: `https://testnet.arcscan.app/tx/0x61dc72ce8f900c1b38b0f1de3bf9dc697055b7d14e6a6a672c6a63791a075368`
+- First anchored trace: `0x9dd8004651df6deeae006b333f8702cdab7726dc23dc0d5aebdab3b62004cdc2`
+- First anchored brief: `http://60.204.151.206:18080/?brief=brief_20260514170832_e7433097`
+
 ## Verification
 
 ```bash
@@ -108,5 +116,5 @@ npm run build
 ## Current Scope
 
 - Local deterministic agent for demo reliability.
-- No real trades, funds, wallets, or private keys.
-- Evidence packet includes an Arc testnet chain ID and SHA-256 trace hash ready for onchain anchoring.
+- No real trades, funds, or private keys.
+- Evidence packet includes an Arc testnet chain ID and SHA-256 trace hash that can be anchored on Arc Testnet.
