@@ -125,6 +125,28 @@
 **当前状态：** 服务器已有 Nginx 并监听 80/443，但当前还没有项目域名；裸 IP HTTPS
 不能申请正常浏览器信任的证书。下一步需要先提供域名并完成 DNS 解析。
 
+### Task 5A：公网 API 基础防护
+
+**描述：** 在跳过域名/HTTPS 的前提下，先补公开写入接口的最低限度防护。
+
+**验收标准：**
+- [x] `POST /api/briefs` 有按客户端 key 的固定窗口限流
+- [x] 限流触发时返回 429 和 `Retry-After`
+- [x] API 和静态响应带基础安全头
+- [x] 限流参数可通过环境变量调整
+
+**验证：**
+- [x] `npm test`
+- [x] `npm run lint`
+- [x] `npm run build`
+- [x] 临时生产服务设置 `AGORA_LENS_POST_RATE_LIMIT=2` 后，第三次 POST 返回 429
+
+**文件：**
+- `server/rateLimiter.mjs`
+- `server/rateLimiter.test.mjs`
+- `server/index.mjs`
+- `deploy/systemd/agora-lens.service`
+
 ## 阶段 3：Arc Testnet 证据锚定
 
 ### Task 6：Trace anchoring 合约

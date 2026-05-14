@@ -48,6 +48,16 @@ systemctl --user restart agora-lens
 The current production URL is `http://60.204.151.206:18080/`. HTTPS requires a
 domain pointed at the server before certificate automation can be enabled.
 
+Production safety defaults:
+
+- `AGORA_LENS_MAX_BODY_BYTES=262144`
+- `AGORA_LENS_POST_RATE_LIMIT=20`
+- `AGORA_LENS_RATE_LIMIT_WINDOW_MS=60000`
+
+The server also sends basic security headers on API and static responses,
+including CSP, frame denial, `nosniff`, no-referrer, and a restrictive
+permissions policy.
+
 ## Verification
 
 ```bash

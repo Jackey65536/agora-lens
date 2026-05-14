@@ -4,12 +4,17 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { createBriefArchive, getBriefArchive, listBriefArchives } from './briefStore.mjs'
+import { createFixedWindowRateLimiter } from './rateLimiter.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const port = Number(process.env.PORT ?? 18080)
 const distDir = path.resolve(process.env.AGORA_LENS_DIST_DIR ?? path.join(__dirname, '..', 'dist'))
 const dataDir = path.resolve(process.env.AGORA_LENS_DATA_DIR ?? path.join(__dirname, '..', 'data'))
 const maxBodyBytes = Number(process.env.AGORA_LENS_MAX_BODY_BYTES ?? 256 * 1024)
+const postRateLimiter = createFixedWindowRateLimiter({
+  maxRequests: process.env.AGORA_LENS_POST_RATE_LIMIT ?? 20,
+  windowMs: process.env.AGORA_LENS_RATE_LIMIT_WINDOW_MS ?? 60_000,
+})
 
 const server = createServer(async (request, response) => {
   try {
@@ -45,6 +50,8 @@ async function routeRequest(request, response) {
   }
 
   if (url.pathname === '/api/briefs' && request.method === 'POST') {
+    if (!allowBriefWrite(request, response)) return
+
     const body = await readJson(request)
     const record = await createBriefArchive(body, { dataDir })
     writeJson(response, 201, { record })
@@ -97,6 +104,7 @@ async function serveStatic(urlPath, response, isHead) {
   const fileStat = await stat(target)
 
   response.writeHead(200, {
+    ...securityHeaders(),
     'Cache-Control': target.endsWith('index.html') ? 'no-cache' : 'public, max-age=31536000, immutable',
     'Content-Length': fileStat.size,
     'Content-Type': contentType,
@@ -132,8 +140,14 @@ function safeStaticPath(urlPath) {
 }
 
 function writeJson(response, status, payload) {
+  writeJsonWithHeaders(response, status, payload)
+}
+
+function writeJsonWithHeaders(response, status, payload, extraHeaders = {}) {
   const body = `${JSON.stringify(payload)}\n`
   response.writeHead(status, {
+    ...securityHeaders(),
+    ...extraHeaders,
     'Cache-Control': 'no-store',
     'Content-Length': Buffer.byteLength(body),
     'Content-Type': 'application/json; charset=utf-8',
@@ -147,6 +161,26 @@ function httpError(statusCode, message) {
   return error
 }
 
+function allowBriefWrite(request, response) {
+  const result = postRateLimiter.check(clientKeyFor(request))
+  if (result.allowed) return true
+
+  writeJsonWithHeaders(
+    response,
+    429,
+    { error: 'too many brief archive requests' },
+    { 'Retry-After': String(result.retryAfterSeconds) },
+  )
+  return false
+}
+
+function clientKeyFor(request) {
+  const forwardedFor = request.headers['x-forwarded-for']
+  const forwardedValue = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor
+  const forwardedIp = forwardedValue?.split(',')[0]?.trim()
+  return forwardedIp || request.socket.remoteAddress || 'unknown'
+}
+
 function contentTypeFor(filePath) {
   const extension = path.extname(filePath)
   const mimeTypes = {
@@ -158,4 +192,15 @@ function contentTypeFor(filePath) {
   }
 
   return mimeTypes[extension] ?? 'application/octet-stream'
+}
+
+function securityHeaders() {
+  return {
+    'Content-Security-Policy':
+      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Referrer-Policy': 'no-referrer',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+  }
 }

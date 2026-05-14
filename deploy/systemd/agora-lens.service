@@ -12,6 +12,8 @@ Environment=PORT=18080
 Environment=AGORA_LENS_DATA_DIR=/home/jackey/apps/agora-lens/data
 Environment=AGORA_LENS_DIST_DIR=/home/jackey/apps/agora-lens/current/dist
 Environment=AGORA_LENS_MAX_BODY_BYTES=262144
+Environment=AGORA_LENS_POST_RATE_LIMIT=20
+Environment=AGORA_LENS_RATE_LIMIT_WINDOW_MS=60000
 ExecStart=/usr/bin/node /home/jackey/apps/agora-lens/current/server/index.mjs
 Restart=always
 RestartSec=5
