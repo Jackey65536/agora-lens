@@ -58,6 +58,19 @@ The server also sends basic security headers on API and static responses,
 including CSP, frame denial, `nosniff`, no-referrer, and a restrictive
 permissions policy.
 
+## Wallet Readiness
+
+The app can detect an injected EIP-1193 wallet, connect on user click, and ask
+the wallet to switch or add Arc Testnet. It does not sign transactions, store
+private keys, or submit onchain anchors yet.
+
+Arc Testnet parameters:
+
+- Chain ID: `5042002`
+- RPC URL: `https://rpc.testnet.arc.network`
+- Currency symbol: `USDC`
+- Explorer: `https://testnet.arcscan.app`
+
 ## Verification
 
 ```bash

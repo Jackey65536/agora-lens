@@ -7,13 +7,23 @@ import {
   DatabaseZap,
   Globe2,
   Loader2,
+  Network,
   RefreshCw,
   Share2,
   ShieldCheck,
   Sparkles,
+  Wallet,
 } from 'lucide-react'
 import { analyzeSignal, sampleSignals, type MarketBrief, type MarketSignal } from './lib/agoraAgent'
 import { briefIdFromSearch, loadBriefArchive, saveBriefArchive, shareUrlForBrief } from './lib/briefArchive'
+import {
+  connectWallet,
+  ensureArcTestnet,
+  formatAddress,
+  injectedWalletProvider,
+  readWalletReadiness,
+  type WalletReadiness,
+} from './lib/wallet'
 import './App.css'
 
 const APP_VERSION = '0.2.0'
@@ -31,6 +41,11 @@ function App() {
     | { id: string; shareUrl: string; status: 'saved' }
     | { message: string; status: 'error' }
   >({ status: 'idle' })
+  const [walletState, setWalletState] = useState<WalletReadiness>({
+    isArcTestnet: false,
+    status: 'checking',
+  })
+  const [walletAction, setWalletAction] = useState<'idle' | 'connecting' | 'switching'>('idle')
 
   const selectedSignal = useMemo(
     () => sampleSignals.find((signal) => signal.id === selectedSignalId) ?? sampleSignals[0],
@@ -83,6 +98,22 @@ function App() {
 
     return () => {
       isActive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const provider = injectedWalletProvider()
+    const refresh = () => {
+      void readWalletReadiness().then(setWalletState)
+    }
+
+    refresh()
+    provider?.on?.('accountsChanged', refresh)
+    provider?.on?.('chainChanged', refresh)
+
+    return () => {
+      provider?.removeListener?.('accountsChanged', refresh)
+      provider?.removeListener?.('chainChanged', refresh)
     }
   }, [])
 
@@ -142,6 +173,37 @@ function App() {
 
     await navigator.clipboard.writeText(archiveState.shareUrl)
     setCopyState('copied')
+  }
+
+  async function connectInjectedWallet() {
+    setWalletAction('connecting')
+    try {
+      setWalletState(await connectWallet())
+    } catch (error) {
+      setWalletState({
+        isArcTestnet: false,
+        message: error instanceof Error ? error.message : 'Wallet connection failed',
+        status: 'error',
+      })
+    } finally {
+      setWalletAction('idle')
+    }
+  }
+
+  async function switchToArcTestnet() {
+    setWalletAction('switching')
+    try {
+      setWalletState(await ensureArcTestnet())
+    } catch (error) {
+      setWalletState({
+        ...walletState,
+        isArcTestnet: false,
+        message: error instanceof Error ? error.message : 'Arc Testnet switch failed',
+        status: 'error',
+      })
+    } finally {
+      setWalletAction('idle')
+    }
   }
 
   return (
@@ -346,6 +408,55 @@ function App() {
               {archiveState.status === 'error' ? (
                 <p className="archive-status error">{archiveState.message}</p>
               ) : null}
+
+              <div className="wallet-card" aria-label="Wallet readiness">
+                <div className="wallet-heading">
+                  <Wallet aria-hidden="true" />
+                  <div>
+                    <p className="eyebrow">Wallet</p>
+                    <strong>{walletTitle(walletState)}</strong>
+                  </div>
+                </div>
+                <p className={`wallet-status ${walletState.status}`}>
+                  {walletMessage(walletState)}
+                </p>
+                <div className="wallet-actions">
+                  {walletState.status === 'unavailable' ? (
+                    <button className="secondary-action full" disabled type="button">
+                      <Wallet aria-hidden="true" />
+                      Wallet unavailable
+                    </button>
+                  ) : walletState.status === 'connected' ? (
+                    <button
+                      className="secondary-action full"
+                      disabled={walletAction === 'switching' || walletState.isArcTestnet}
+                      type="button"
+                      onClick={() => void switchToArcTestnet()}
+                    >
+                      {walletAction === 'switching' ? (
+                        <Loader2 className="spin" aria-hidden="true" />
+                      ) : (
+                        <Network aria-hidden="true" />
+                      )}
+                      {walletState.isArcTestnet ? 'Arc Testnet ready' : 'Switch to Arc Testnet'}
+                    </button>
+                  ) : (
+                    <button
+                      className="secondary-action full"
+                      disabled={walletAction === 'connecting'}
+                      type="button"
+                      onClick={() => void connectInjectedWallet()}
+                    >
+                      {walletAction === 'connecting' ? (
+                        <Loader2 className="spin" aria-hidden="true" />
+                      ) : (
+                        <Wallet aria-hidden="true" />
+                      )}
+                      Connect wallet
+                    </button>
+                  )}
+                </div>
+              </div>
             </>
           ) : (
             <div className="empty-state">Evidence packet appears after agent output.</div>
@@ -354,6 +465,32 @@ function App() {
       </section>
     </main>
   )
+}
+
+function walletTitle(state: WalletReadiness): string {
+  if (state.status === 'connected' && state.account) {
+    return state.isArcTestnet
+      ? `${formatAddress(state.account)} · Arc Testnet`
+      : `${formatAddress(state.account)} · Chain ${state.chainId ?? 'unknown'}`
+  }
+
+  if (state.status === 'disconnected') return 'Wallet detected'
+  if (state.status === 'unavailable') return 'No injected wallet'
+  if (state.status === 'error') return 'Wallet check failed'
+  return 'Checking wallet'
+}
+
+function walletMessage(state: WalletReadiness): string {
+  if (state.message) return state.message
+  if (state.status === 'connected' && state.isArcTestnet) {
+    return 'Ready for a later explicit anchor transaction.'
+  }
+  if (state.status === 'connected') {
+    return 'Connected, but not on Arc Testnet.'
+  }
+  if (state.status === 'disconnected') return 'Connect before preparing an onchain anchor.'
+  if (state.status === 'unavailable') return 'Install MetaMask, Rabby, or another EIP-1193 wallet.'
+  return 'Checking the browser wallet provider.'
 }
 
 export default App

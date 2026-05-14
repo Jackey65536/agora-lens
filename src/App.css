@@ -24,6 +24,8 @@
 .button-row,
 .section-title,
 .evidence-actions,
+.wallet-actions,
+.wallet-heading,
 .warning-list li,
 .secondary-action,
 .primary-action {
@@ -53,6 +55,8 @@
 .section-title svg,
 .button-row svg,
 .evidence-actions svg,
+.wallet-actions svg,
+.wallet-heading svg,
 .secondary-action svg,
 .primary-action svg,
 .warning-list svg {
@@ -408,6 +412,47 @@ button:focus-visible {
   color: var(--coral);
 }
 
+.wallet-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-top: 14px;
+  padding: 14px;
+}
+
+.wallet-heading {
+  gap: 10px;
+}
+
+.wallet-heading > svg {
+  color: var(--teal);
+  flex: 0 0 auto;
+}
+
+.wallet-heading strong {
+  color: var(--ink);
+  display: block;
+}
+
+.wallet-status {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 10px 0 12px;
+}
+
+.wallet-status.connected {
+  color: var(--green);
+}
+
+.wallet-status.error {
+  color: var(--coral);
+}
+
+.wallet-actions {
+  gap: 10px;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -446,6 +491,11 @@ button:focus-visible {
   }
 
   .evidence-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .wallet-actions {
     align-items: stretch;
     flex-direction: column;
   }

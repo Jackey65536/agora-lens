@@ -165,9 +165,23 @@
 **描述：** 接入 MetaMask/Rabby，所有链上写入都由用户显式签名。
 
 **验收标准：**
-- [ ] 不读取私钥或助记词
-- [ ] 钱包未连接时可以继续本地保存
+- [x] 不读取私钥或助记词
+- [x] 钱包未连接时可以继续本地保存
+- [x] 可检测 EIP-1193 钱包并在用户点击后连接
+- [x] 可请求钱包切换或添加 Arc Testnet
 - [ ] 链上写入前展示清晰确认内容
+
+**验证：**
+- [x] `npm test`
+- [x] `npm run lint`
+- [x] `npm run build`
+- [x] 浏览器无钱包环境下 UI 正常降级，无 console error
+
+**文件：**
+- `src/lib/wallet.ts`
+- `src/lib/wallet.test.ts`
+- `src/App.tsx`
+- `src/App.css`
 
 ## 阶段 4：真实信号和 LLM
 
