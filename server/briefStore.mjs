@@ -23,6 +23,7 @@ export function validateBriefArchiveInput(input) {
   requireString(signal.sourceLabel, 'signal.sourceLabel')
   requireString(signal.receivedAt, 'signal.receivedAt')
   requireString(signal.text, 'signal.text')
+  requireSourceReferences(signal.sources, 'signal.sources')
 
   requireString(brief.headline, 'brief.headline')
   requireString(brief.category, 'brief.category')
@@ -38,6 +39,8 @@ export function validateBriefArchiveInput(input) {
     throw validationError('brief.probability must be between 0 and 100')
   }
   requireStringArray(brief.rationale, 'brief.rationale')
+  requireSourceReferences(brief.sourceReferences, 'brief.sourceReferences')
+  requireRationaleSources(brief.rationaleSources)
   requireStringArray(brief.riskFlags, 'brief.riskFlags')
   requireStringArray(brief.nextActions, 'brief.nextActions')
   requireAgentSteps(brief.agentSteps)
@@ -179,6 +182,37 @@ function requireContractSketch(value) {
   requireString(value.no, 'brief.contractSketch.no')
   requireString(value.resolution, 'brief.contractSketch.resolution')
   requireString(value.invalid, 'brief.contractSketch.invalid')
+}
+
+function requireSourceReferences(value, label) {
+  if (value === undefined) return
+  if (!Array.isArray(value)) throw validationError(`${label} must be an array`)
+
+  for (const source of value) {
+    if (!source || typeof source !== 'object') throw validationError(`${label} entries must be objects`)
+    requireString(source.capturedAt, `${label}.capturedAt`)
+    requireString(source.sourceType, `${label}.sourceType`)
+    requireString(source.title, `${label}.title`)
+    if (source.url !== undefined) requireString(source.url, `${label}.url`)
+    if (source.publishedAt !== undefined) requireString(source.publishedAt, `${label}.publishedAt`)
+    if (source.excerpt !== undefined) requireString(source.excerpt, `${label}.excerpt`)
+  }
+}
+
+function requireRationaleSources(value) {
+  if (value === undefined) return
+  if (!Array.isArray(value)) throw validationError('brief.rationaleSources must be an array')
+
+  for (const source of value) {
+    if (!source || typeof source !== 'object') {
+      throw validationError('brief.rationaleSources entries must be objects')
+    }
+    requireString(source.capturedAt, 'brief.rationaleSources.capturedAt')
+    requireString(source.rationale, 'brief.rationaleSources.rationale')
+    requireString(source.sourceTitle, 'brief.rationaleSources.sourceTitle')
+    if (source.sourceUrl !== undefined) requireString(source.sourceUrl, 'brief.rationaleSources.sourceUrl')
+    if (source.publishedAt !== undefined) requireString(source.publishedAt, 'brief.rationaleSources.publishedAt')
+  }
 }
 
 function isSupportedDigest(value) {

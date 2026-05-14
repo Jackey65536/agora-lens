@@ -24,6 +24,7 @@
 .button-row,
 .section-title,
 .evidence-actions,
+.segmented-control,
 .wallet-actions,
 .wallet-heading,
 .warning-list li,
@@ -55,6 +56,7 @@
 .section-title svg,
 .button-row svg,
 .evidence-actions svg,
+.segmented-control svg,
 .wallet-actions svg,
 .wallet-heading svg,
 .secondary-action svg,
@@ -100,6 +102,48 @@
   margin-bottom: 18px;
 }
 
+.source-import {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 12px;
+}
+
+.segmented-control {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 4px;
+}
+
+.segmented-control button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 6px;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 8px;
+}
+
+.segmented-control button.active {
+  background: var(--ink);
+  color: #ffffff;
+}
+
 .sample {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -113,6 +157,10 @@
 .sample.active {
   border-color: var(--teal);
   box-shadow: inset 3px 0 0 var(--teal);
+}
+
+.sample.imported {
+  border-style: dashed;
 }
 
 .sample span,
@@ -144,6 +192,10 @@ textarea {
   padding: 12px;
   resize: vertical;
   width: 100%;
+}
+
+.compact-textarea {
+  min-height: 120px;
 }
 
 input {
@@ -280,6 +332,19 @@ button:focus-visible {
   line-height: 1.45;
   margin: 0;
   padding-left: 18px;
+}
+
+.rationale-source {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  line-height: 1.35;
+  margin-top: 6px;
+}
+
+.rationale-source a {
+  color: var(--teal);
+  font-weight: 800;
 }
 
 .warning-list {
@@ -430,6 +495,25 @@ button:focus-visible {
   color: var(--coral);
 }
 
+.import-status {
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: 10px;
+}
+
+.import-status.imported {
+  background: rgba(16, 122, 99, 0.12);
+  color: var(--green);
+}
+
+.import-status.error {
+  background: rgba(194, 65, 12, 0.12);
+  color: var(--coral);
+}
+
 .wallet-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -554,6 +638,7 @@ button:focus-visible {
 
   .metric-row,
   .packet-grid,
+  .segmented-control,
   .two-column {
     grid-template-columns: 1fr;
   }

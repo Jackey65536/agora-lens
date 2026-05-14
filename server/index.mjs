@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { createBriefArchive, getBriefArchive, listBriefArchives } from './briefStore.mjs'
 import { createFixedWindowRateLimiter } from './rateLimiter.mjs'
+import { importSource } from './sourceImporter.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const port = Number(process.env.PORT ?? 18080)
@@ -50,11 +51,20 @@ async function routeRequest(request, response) {
   }
 
   if (url.pathname === '/api/briefs' && request.method === 'POST') {
-    if (!allowBriefWrite(request, response)) return
+    if (!allowWrite(request, response, 'too many brief archive requests')) return
 
     const body = await readJson(request)
     const record = await createBriefArchive(body, { dataDir })
     writeJson(response, 201, { record })
+    return
+  }
+
+  if (url.pathname === '/api/sources/import' && request.method === 'POST') {
+    if (!allowWrite(request, response, 'too many source import requests')) return
+
+    const body = await readJson(request)
+    const result = await importSource(body)
+    writeJson(response, 200, result)
     return
   }
 
@@ -161,14 +171,14 @@ function httpError(statusCode, message) {
   return error
 }
 
-function allowBriefWrite(request, response) {
+function allowWrite(request, response, message) {
   const result = postRateLimiter.check(clientKeyFor(request))
   if (result.allowed) return true
 
   writeJsonWithHeaders(
     response,
     429,
-    { error: 'too many brief archive requests' },
+    { error: message },
     { 'Retry-After': String(result.retryAfterSeconds) },
   )
   return false

@@ -99,6 +99,21 @@ Current Arc Testnet deployment:
 - First anchored trace: `0x9dd8004651df6deeae006b333f8702cdab7726dc23dc0d5aebdab3b62004cdc2`
 - First anchored brief: `http://60.204.151.206:18080/?brief=brief_20260514170832_e7433097`
 
+## Source Import
+
+The server exposes `POST /api/sources/import` so the frontend can import real
+source material before running the local agent. Supported input types:
+
+- `url`: fetches a public webpage and extracts readable text.
+- `rss`: fetches a public RSS/Atom feed and imports the latest deduped items.
+- `research`: imports an operator-provided research note.
+- `social`: imports an operator-provided thread or post.
+
+Remote URL imports validate the scheme, block local/private network targets,
+cap response size, and preserve source references with URL, title, captured
+time, and optional published time. The generated market brief binds each
+rationale row back to those source references.
+
 ## Verification
 
 ```bash

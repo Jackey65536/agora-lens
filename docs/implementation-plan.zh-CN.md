@@ -220,8 +220,30 @@
 **描述：** 支持手动 URL、RSS、研究笔记和社交信号导入。
 
 **验收标准：**
-- [ ] 每条 rationale 可以绑定来源 URL 和时间戳
-- [ ] 重复来源会被去重
+- [x] 支持公开 URL 导入，并提取页面标题和正文
+- [x] 支持 RSS/Atom 导入，并保留 item URL 和发布时间
+- [x] 支持研究笔记和社交信号粘贴导入
+- [x] 每条 rationale 可以绑定来源 URL 和时间戳
+- [x] 重复来源会被去重
+- [x] 远程 URL 导入会拦截本机/私网目标，避免 SSRF 基础风险
+
+**验证：**
+- [x] `npm test -- server/sourceImporter.test.mjs src/lib/sourceImport.test.ts`
+- [x] `npm test -- src/lib/agoraAgent.test.ts server/briefStore.test.mjs`
+- [x] `npm run build`
+
+**文件：**
+- `server/sourceImporter.mjs`
+- `server/sourceImporter.test.mjs`
+- `server/index.mjs`
+- `src/lib/sourceImport.ts`
+- `src/lib/sourceImport.test.ts`
+- `src/lib/agoraAgent.ts`
+- `src/lib/agoraAgent.test.ts`
+- `src/App.tsx`
+- `src/App.css`
+- `server/briefStore.mjs`
+- `server/briefStore.test.mjs`
 
 ### Task 9：LLM 生成 + 规则校验
 
@@ -250,3 +272,5 @@
 4. Checkpoint 1：部署新版到服务器。
 5. Task 4/5：稳定服务和正式入口。
 6. Task 6/7：Arc Testnet 锚定。
+7. Task 8：真实数据源导入。
+8. Task 9：LLM 生成 + 规则校验。

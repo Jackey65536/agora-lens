@@ -139,4 +139,41 @@ describe('brief archive store', () => {
       }),
     ).toThrow('brief.rationale must be a non-empty string array')
   })
+
+  it('accepts imported source references and rationale bindings', () => {
+    expect(() =>
+      validateBriefArchiveInput({
+        brief: {
+          ...brief,
+          rationaleSources: [
+            {
+              capturedAt: '2026-05-14T12:00:00.000Z',
+              rationale: brief.rationale[0],
+              sourceTitle: 'Imported source',
+              sourceUrl: 'https://example.com/story',
+            },
+          ],
+          sourceReferences: [
+            {
+              capturedAt: '2026-05-14T12:00:00.000Z',
+              sourceType: 'url',
+              title: 'Imported source',
+              url: 'https://example.com/story',
+            },
+          ],
+        },
+        signal: {
+          ...signal,
+          sources: [
+            {
+              capturedAt: '2026-05-14T12:00:00.000Z',
+              sourceType: 'url',
+              title: 'Imported source',
+              url: 'https://example.com/story',
+            },
+          ],
+        },
+      }),
+    ).not.toThrow()
+  })
 })

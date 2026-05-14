@@ -5,10 +5,15 @@ import {
   CheckCircle2,
   Clipboard,
   DatabaseZap,
+  DownloadCloud,
+  FileText,
   Globe2,
+  Link,
   Loader2,
+  MessageSquare,
   Network,
   RefreshCw,
+  Rss,
   Share2,
   ShieldCheck,
   Sparkles,
@@ -17,6 +22,7 @@ import {
 import { TraceAnchorPanel } from './components/TraceAnchorPanel'
 import { analyzeSignal, sampleSignals, type MarketBrief, type MarketSignal } from './lib/agoraAgent'
 import { briefIdFromSearch, loadBriefArchive, saveBriefArchive, shareUrlForBrief } from './lib/briefArchive'
+import { importSourceMaterial, sourceUrlFromText, type SourceImportType } from './lib/sourceImport'
 import {
   connectWallet,
   ensureArcTestnet,
@@ -28,10 +34,27 @@ import {
 import './App.css'
 
 const APP_VERSION = '0.2.0'
+const importModes: Array<{ label: string; type: SourceImportType }> = [
+  { label: 'URL', type: 'url' },
+  { label: 'RSS', type: 'rss' },
+  { label: 'Research', type: 'research' },
+  { label: 'Social', type: 'social' },
+]
 
 function App() {
   const [selectedSignalId, setSelectedSignalId] = useState(sampleSignals[0].id)
   const [customText, setCustomText] = useState(sampleSignals[0].text)
+  const [importedSignal, setImportedSignal] = useState<MarketSignal | null>(null)
+  const [sourceImportType, setSourceImportType] = useState<SourceImportType>('url')
+  const [sourceImportUrl, setSourceImportUrl] = useState('')
+  const [sourceImportText, setSourceImportText] = useState('')
+  const [sourceImportTitle, setSourceImportTitle] = useState('')
+  const [sourceImportState, setSourceImportState] = useState<
+    | { status: 'idle' }
+    | { status: 'importing' }
+    | { status: 'imported'; title: string }
+    | { message: string; status: 'error' }
+  >({ status: 'idle' })
   const [brief, setBrief] = useState<MarketBrief | null>(null)
   const [briefSignal, setBriefSignal] = useState<MarketSignal | null>(null)
   const [isRunning, setIsRunning] = useState(true)
@@ -49,8 +72,8 @@ function App() {
   const [walletAction, setWalletAction] = useState<'idle' | 'connecting' | 'switching'>('idle')
 
   const selectedSignal = useMemo(
-    () => sampleSignals.find((signal) => signal.id === selectedSignalId) ?? sampleSignals[0],
-    [selectedSignalId],
+    () => sampleSignals.find((signal) => signal.id === selectedSignalId) ?? importedSignal ?? sampleSignals[0],
+    [importedSignal, selectedSignalId],
   )
 
   useEffect(() => {
@@ -62,6 +85,7 @@ function App() {
         .then((record) => {
           if (!isActive) return
           setSelectedSignalId(record.signal.id)
+          setImportedSignal(sampleSignals.some((signal) => signal.id === record.signal.id) ? null : record.signal)
           setCustomText(record.signal.text)
           setBriefSignal(record.signal)
           setBrief(record.brief)
@@ -141,9 +165,40 @@ function App() {
   }
 
   function loadSample(signal: MarketSignal) {
+    setImportedSignal(null)
     setSelectedSignalId(signal.id)
     setCustomText(signal.text)
     void runAgent(signal)
+  }
+
+  function loadImportedSignal(signal: MarketSignal) {
+    setImportedSignal(signal)
+    setSelectedSignalId(signal.id)
+    setCustomText(signal.text)
+    void runAgent(signal)
+  }
+
+  async function importCurrentSource() {
+    setSourceImportState({ status: 'importing' })
+    try {
+      const signal = await importSourceMaterial({
+        sourceTitle: sourceImportTitle.trim() || undefined,
+        sourceUrl: sourceImportUrl.trim() || sourceUrlFromText(sourceImportText) || undefined,
+        text: sourceImportText.trim() || undefined,
+        type: sourceImportType,
+        url: sourceImportUrl.trim() || undefined,
+      })
+      setImportedSignal(signal)
+      setSelectedSignalId(signal.id)
+      setCustomText(signal.text)
+      setSourceImportState({ status: 'imported', title: signal.title })
+      await runAgent(signal)
+    } catch (error) {
+      setSourceImportState({
+        message: error instanceof Error ? error.message : 'Source import failed',
+        status: 'error',
+      })
+    }
   }
 
   async function copyEvidence() {
@@ -240,6 +295,97 @@ function App() {
             </div>
           </div>
 
+          <div className="source-import" aria-label="Source import">
+            <div className="segmented-control" role="group" aria-label="Import type">
+              {importModes.map((mode) => (
+                <button
+                  className={mode.type === sourceImportType ? 'active' : ''}
+                  key={mode.type}
+                  type="button"
+                  onClick={() => setSourceImportType(mode.type)}
+                >
+                  {importModeIcon(mode.type)}
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+
+            {sourceImportType === 'url' || sourceImportType === 'rss' ? (
+              <>
+                <label className="input-label compact" htmlFor="source-import-url">
+                  Source URL
+                </label>
+                <input
+                  id="source-import-url"
+                  placeholder={
+                    sourceImportType === 'rss'
+                      ? 'https://example.com/feed.xml'
+                      : 'https://example.com/research'
+                  }
+                  value={sourceImportUrl}
+                  onChange={(event) => setSourceImportUrl(event.target.value)}
+                />
+              </>
+            ) : (
+              <>
+                <label className="input-label compact" htmlFor="source-import-title">
+                  Source title
+                </label>
+                <input
+                  id="source-import-title"
+                  placeholder={sourceImportType === 'research' ? 'Desk note title' : 'Thread or post title'}
+                  value={sourceImportTitle}
+                  onChange={(event) => setSourceImportTitle(event.target.value)}
+                />
+                <label className="input-label compact" htmlFor="source-import-url">
+                  Source URL
+                </label>
+                <input
+                  id="source-import-url"
+                  placeholder="https://example.com/source"
+                  value={sourceImportUrl}
+                  onChange={(event) => setSourceImportUrl(event.target.value)}
+                />
+                <label className="input-label compact" htmlFor="source-import-text">
+                  Source text
+                </label>
+                <textarea
+                  className="compact-textarea"
+                  id="source-import-text"
+                  rows={5}
+                  value={sourceImportText}
+                  onChange={(event) => setSourceImportText(event.target.value)}
+                />
+              </>
+            )}
+
+            <button
+              className="secondary-action full"
+              disabled={
+                sourceImportState.status === 'importing' ||
+                ((sourceImportType === 'url' || sourceImportType === 'rss') && sourceImportUrl.trim().length === 0) ||
+                ((sourceImportType === 'research' || sourceImportType === 'social') &&
+                  sourceImportText.trim().length === 0)
+              }
+              type="button"
+              onClick={() => void importCurrentSource()}
+            >
+              {sourceImportState.status === 'importing' ? (
+                <Loader2 className="spin" aria-hidden="true" />
+              ) : (
+                <DownloadCloud aria-hidden="true" />
+              )}
+              Import source
+            </button>
+
+            {sourceImportState.status === 'imported' ? (
+              <p className="import-status imported">Imported {sourceImportState.title}</p>
+            ) : null}
+            {sourceImportState.status === 'error' ? (
+              <p className="import-status error">{sourceImportState.message}</p>
+            ) : null}
+          </div>
+
           <div className="sample-list" aria-label="Sample signals">
             {sampleSignals.map((signal) => (
               <button
@@ -252,6 +398,16 @@ function App() {
                 <small>{signal.sourceLabel}</small>
               </button>
             ))}
+            {importedSignal ? (
+              <button
+                className={importedSignal.id === selectedSignalId ? 'sample active imported' : 'sample imported'}
+                type="button"
+                onClick={() => loadImportedSignal(importedSignal)}
+              >
+                <span>{importedSignal.title}</span>
+                <small>{importedSignal.sourceLabel}</small>
+              </button>
+            ) : null}
           </div>
 
           <label className="input-label" htmlFor="signal-text">
@@ -311,9 +467,28 @@ function App() {
                 <div>
                   <p className="eyebrow">Rationale</p>
                   <ul className="plain-list">
-                    {brief.rationale.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
+                    {brief.rationale.map((item, index) => {
+                      const source = rationaleSourceFor(brief, item, index)
+                      return (
+                        <li key={`${item}-${index}`}>
+                          <span>{item}</span>
+                          {source ? (
+                            <small className="rationale-source">
+                              Source:{' '}
+                              {source.sourceUrl ? (
+                                <a href={source.sourceUrl} target="_blank" rel="noreferrer">
+                                  {source.sourceTitle}
+                                </a>
+                              ) : (
+                                source.sourceTitle
+                              )}
+                              {' · '}
+                              {formatSourceTimestamp(source.publishedAt ?? source.capturedAt)}
+                            </small>
+                          ) : null}
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
                 <div>
@@ -499,6 +674,27 @@ function walletMessage(state: WalletReadiness): string {
   if (state.status === 'disconnected') return 'Connect before preparing an onchain anchor.'
   if (state.status === 'unavailable') return 'Install MetaMask, Rabby, or another EIP-1193 wallet.'
   return 'Checking the browser wallet provider.'
+}
+
+function importModeIcon(type: SourceImportType) {
+  if (type === 'rss') return <Rss aria-hidden="true" />
+  if (type === 'research') return <FileText aria-hidden="true" />
+  if (type === 'social') return <MessageSquare aria-hidden="true" />
+  return <Link aria-hidden="true" />
+}
+
+function rationaleSourceFor(brief: MarketBrief, rationale: string, index: number) {
+  return (
+    brief.rationaleSources.find((source) => source.rationale === rationale) ??
+    brief.rationaleSources[index] ??
+    null
+  )
+}
+
+function formatSourceTimestamp(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toISOString().slice(0, 16).replace('T', ' ')
 }
 
 export default App

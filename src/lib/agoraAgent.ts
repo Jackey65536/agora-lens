@@ -1,9 +1,28 @@
 import { sha256Hex } from './sha256'
 
 export type SignalSource = 'news' | 'social' | 'research' | 'manual'
+export type SourceReferenceType = 'news' | 'url' | 'rss' | 'research' | 'social' | 'manual'
+
+export interface SourceReference {
+  capturedAt: string
+  excerpt?: string
+  publishedAt?: string
+  sourceType: SourceReferenceType
+  title: string
+  url?: string
+}
+
+export interface RationaleSource {
+  capturedAt: string
+  publishedAt?: string
+  rationale: string
+  sourceTitle: string
+  sourceUrl?: string
+}
 
 export interface MarketSignal {
   id: string
+  sources?: SourceReference[]
   title: string
   source: SignalSource
   sourceLabel: string
@@ -38,6 +57,7 @@ export interface EvidencePacket {
     probability: number
     confidence: string
     rationale: string[]
+    sourceReferences: SourceReference[]
     resolution: string
   }
 }
@@ -54,10 +74,12 @@ export interface MarketBrief {
   timeframe: string
   contractSketch: ContractSketch
   rationale: string[]
+  rationaleSources: RationaleSource[]
   riskFlags: string[]
   nextActions: string[]
   agentSteps: AgentStep[]
   evidencePacket: EvidencePacket
+  sourceReferences: SourceReference[]
 }
 
 export const sampleSignals: MarketSignal[] = [
@@ -101,6 +123,8 @@ export async function analyzeSignal(signal: MarketSignal): Promise<MarketBrief> 
   const marketQuestion = buildQuestion(translatedThesis, category, timeframe)
   const contractSketch = buildContractSketch(translatedThesis, timeframe)
   const rationale = buildRationale(normalized, category, probability)
+  const sourceReferences = normalizeSourceReferences(signal)
+  const rationaleSources = buildRationaleSources(rationale, sourceReferences)
   const riskFlags = buildRiskFlags(normalized, sourceLanguage)
   const nextActions = buildNextActions(category)
   const agentSteps = buildAgentSteps(sourceLanguage, category, probability)
@@ -112,6 +136,7 @@ export async function analyzeSignal(signal: MarketSignal): Promise<MarketBrief> 
     probability,
     confidence,
     rationale,
+    sourceReferences,
     resolution: contractSketch.resolution,
   }
   const traceHash = await hashEvidence(payload)
@@ -128,9 +153,11 @@ export async function analyzeSignal(signal: MarketSignal): Promise<MarketBrief> 
     timeframe,
     contractSketch,
     rationale,
+    rationaleSources,
     riskFlags,
     nextActions,
     agentSteps,
+    sourceReferences,
     evidencePacket: {
       network: 'Arc Testnet',
       chainId: 5042002,
@@ -141,6 +168,70 @@ export async function analyzeSignal(signal: MarketSignal): Promise<MarketBrief> 
       payload,
     },
   }
+}
+
+function normalizeSourceReferences(signal: MarketSignal): SourceReference[] {
+  const references =
+    signal.sources && signal.sources.length > 0
+      ? signal.sources
+      : [
+          {
+            capturedAt: signal.receivedAt,
+            excerpt: compactSubject(signal.text, 180),
+            sourceType: signal.source,
+            title: signal.sourceLabel,
+          },
+        ]
+
+  const seen = new Set<string>()
+  const normalized: SourceReference[] = []
+
+  for (const reference of references) {
+    const url = reference.url ? normalizeSourceUrl(reference.url) : undefined
+    const key = url ?? `${reference.title}|${reference.publishedAt ?? reference.capturedAt}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    normalized.push({
+      capturedAt: reference.capturedAt,
+      excerpt: reference.excerpt,
+      publishedAt: reference.publishedAt,
+      sourceType: reference.sourceType,
+      title: reference.title,
+      url,
+    })
+  }
+
+  return normalized
+}
+
+function normalizeSourceUrl(value: string): string {
+  try {
+    const url = new URL(value)
+    url.hash = ''
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(utm_|fbclid$|gclid$|mc_cid$|mc_eid$)/i.test(key)) url.searchParams.delete(key)
+    }
+    url.hostname = url.hostname.toLowerCase()
+    return url.toString().replace(/\/$/, '')
+  } catch {
+    return value
+  }
+}
+
+function buildRationaleSources(rationale: string[], references: SourceReference[]): RationaleSource[] {
+  const fallback = references[0]
+  if (!fallback) return []
+
+  return rationale.map((item, index) => {
+    const source = references[index] ?? fallback
+    return {
+      capturedAt: source.capturedAt,
+      publishedAt: source.publishedAt,
+      rationale: item,
+      sourceTitle: source.title,
+      sourceUrl: source.url,
+    }
+  })
 }
 
 export function normalize(input: string): string {
