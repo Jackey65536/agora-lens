@@ -1,0 +1,66 @@
+:root {
+  --bg: #f7f6f2;
+  --panel: #ffffff;
+  --surface: #f0f5f4;
+  --surface-strong: #e7ece9;
+  --ink: #1c2522;
+  --muted: #67716d;
+  --border: #d9dfdc;
+  --border-strong: #aeb9b4;
+  --teal: #0f766e;
+  --green: #107a63;
+  --amber: #b45309;
+  --coral: #c2410c;
+  --focus: rgba(15, 118, 110, 0.28);
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  background: var(--bg);
+  color: var(--ink);
+  color-scheme: light;
+  font: 16px/145% var(--sans);
+  font-synthesis: none;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg);
+  margin: 0;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1 {
+  color: var(--ink);
+  font-size: 38px;
+  line-height: 1.05;
+  margin: 0;
+}
+
+h2 {
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+}
+
+code {
+  font-family: var(--mono);
+}
+
+button,
+textarea {
+  font: inherit;
+}
