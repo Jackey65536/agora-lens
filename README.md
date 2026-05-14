@@ -9,6 +9,22 @@ npm install
 npm run dev
 ```
 
+## Production Server
+
+Build the app and run the static/API server:
+
+```bash
+npm run build
+npm run serve
+```
+
+The server exposes:
+
+- `GET /api/health`
+- `POST /api/briefs`
+- `GET /api/briefs/:id`
+- `GET /api/briefs`
+
 ## Verification
 
 ```bash

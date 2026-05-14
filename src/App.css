@@ -23,6 +23,7 @@
 .status-row,
 .button-row,
 .section-title,
+.evidence-actions,
 .warning-list li,
 .secondary-action,
 .primary-action {
@@ -51,6 +52,7 @@
 .status-row svg,
 .section-title svg,
 .button-row svg,
+.evidence-actions svg,
 .secondary-action svg,
 .primary-action svg,
 .warning-list svg {
@@ -172,6 +174,11 @@ button:focus-visible {
 .secondary-action {
   background: var(--surface-strong);
   color: var(--ink);
+}
+
+.secondary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .secondary-action.full {
@@ -377,6 +384,30 @@ button:focus-visible {
   padding: 24px;
 }
 
+.evidence-actions {
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.archive-status {
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+  padding: 10px;
+}
+
+.archive-status.saved {
+  background: rgba(16, 122, 99, 0.12);
+  color: var(--green);
+}
+
+.archive-status.error {
+  background: rgba(194, 65, 12, 0.12);
+  color: var(--coral);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -410,6 +441,11 @@ button:focus-visible {
   }
 
   .button-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .evidence-actions {
     align-items: stretch;
     flex-direction: column;
   }

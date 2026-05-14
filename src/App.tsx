@@ -1,24 +1,36 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
+  Archive,
   CheckCircle2,
   Clipboard,
   DatabaseZap,
   Globe2,
   Loader2,
   RefreshCw,
+  Share2,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
 import { analyzeSignal, sampleSignals, type MarketBrief, type MarketSignal } from './lib/agoraAgent'
+import { briefIdFromSearch, loadBriefArchive, saveBriefArchive, shareUrlForBrief } from './lib/briefArchive'
 import './App.css'
+
+const APP_VERSION = '0.2.0'
 
 function App() {
   const [selectedSignalId, setSelectedSignalId] = useState(sampleSignals[0].id)
   const [customText, setCustomText] = useState(sampleSignals[0].text)
   const [brief, setBrief] = useState<MarketBrief | null>(null)
+  const [briefSignal, setBriefSignal] = useState<MarketSignal | null>(null)
   const [isRunning, setIsRunning] = useState(true)
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
+  const [archiveState, setArchiveState] = useState<
+    | { status: 'idle' }
+    | { status: 'saving' }
+    | { id: string; shareUrl: string; status: 'saved' }
+    | { message: string; status: 'error' }
+  >({ status: 'idle' })
 
   const selectedSignal = useMemo(
     () => sampleSignals.find((signal) => signal.id === selectedSignalId) ?? sampleSignals[0],
@@ -27,10 +39,45 @@ function App() {
 
   useEffect(() => {
     let isActive = true
+    const briefId = briefIdFromSearch(window.location.search)
+
+    if (briefId) {
+      void loadBriefArchive(briefId)
+        .then((record) => {
+          if (!isActive) return
+          setSelectedSignalId(record.signal.id)
+          setCustomText(record.signal.text)
+          setBriefSignal(record.signal)
+          setBrief(record.brief)
+          setArchiveState({
+            id: record.id,
+            shareUrl: shareUrlForBrief(record.id, window.location.href),
+            status: 'saved',
+          })
+          setIsRunning(false)
+        })
+        .catch((error: unknown) => {
+          if (!isActive) return
+          setArchiveState({
+            message: error instanceof Error ? error.message : 'Failed to load saved brief',
+            status: 'error',
+          })
+          void analyzeSignal(sampleSignals[0]).then((result) => {
+            if (!isActive) return
+            setBrief(result)
+            setBriefSignal(sampleSignals[0])
+            setIsRunning(false)
+          })
+        })
+      return () => {
+        isActive = false
+      }
+    }
 
     void analyzeSignal(sampleSignals[0]).then((result) => {
       if (!isActive) return
       setBrief(result)
+      setBriefSignal(sampleSignals[0])
       setIsRunning(false)
     })
 
@@ -42,6 +89,7 @@ function App() {
   async function runAgent(baseSignal?: MarketSignal) {
     setIsRunning(true)
     setCopyState('idle')
+    setArchiveState({ status: 'idle' })
     const signal =
       baseSignal ??
       ({
@@ -56,6 +104,7 @@ function App() {
 
     const result = await analyzeSignal(signal)
     setBrief(result)
+    setBriefSignal(signal)
     setIsRunning(false)
   }
 
@@ -68,6 +117,30 @@ function App() {
   async function copyEvidence() {
     if (!brief) return
     await navigator.clipboard.writeText(JSON.stringify(brief.evidencePacket, null, 2))
+    setCopyState('copied')
+  }
+
+  async function saveCurrentBrief() {
+    if (!brief || !briefSignal) return
+
+    setArchiveState({ status: 'saving' })
+    try {
+      const record = await saveBriefArchive({ appVersion: APP_VERSION, brief, signal: briefSignal })
+      const shareUrl = shareUrlForBrief(record.id, window.location.href)
+      setArchiveState({ id: record.id, shareUrl, status: 'saved' })
+      window.history.replaceState(null, '', shareUrl)
+    } catch (error) {
+      setArchiveState({
+        message: error instanceof Error ? error.message : 'Brief archive API is unavailable',
+        status: 'error',
+      })
+    }
+  }
+
+  async function copyShareLink() {
+    if (archiveState.status !== 'saved') return
+
+    await navigator.clipboard.writeText(archiveState.shareUrl)
     setCopyState('copied')
   }
 
@@ -243,6 +316,36 @@ function App() {
                 <Clipboard aria-hidden="true" />
                 {copyState === 'copied' ? 'Copied packet' : 'Copy packet JSON'}
               </button>
+
+              <div className="evidence-actions" aria-label="Archive actions">
+                <button
+                  className="secondary-action full"
+                  disabled={archiveState.status === 'saving'}
+                  type="button"
+                  onClick={() => void saveCurrentBrief()}
+                >
+                  {archiveState.status === 'saving' ? (
+                    <Loader2 className="spin" aria-hidden="true" />
+                  ) : (
+                    <Archive aria-hidden="true" />
+                  )}
+                  {archiveState.status === 'saving' ? 'Saving brief' : 'Save brief'}
+                </button>
+
+                {archiveState.status === 'saved' ? (
+                  <button className="secondary-action full" type="button" onClick={() => void copyShareLink()}>
+                    <Share2 aria-hidden="true" />
+                    Copy share link
+                  </button>
+                ) : null}
+              </div>
+
+              {archiveState.status === 'saved' ? (
+                <p className="archive-status saved">Saved as {archiveState.id}</p>
+              ) : null}
+              {archiveState.status === 'error' ? (
+                <p className="archive-status error">{archiveState.message}</p>
+              ) : null}
             </>
           ) : (
             <div className="empty-state">Evidence packet appears after agent output.</div>
