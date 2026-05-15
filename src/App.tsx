@@ -22,6 +22,7 @@ import {
 import { TraceAnchorPanel } from './components/TraceAnchorPanel'
 import { analyzeSignal, sampleSignals, type MarketBrief, type MarketSignal } from './lib/agoraAgent'
 import { briefIdFromSearch, loadBriefArchive, saveBriefArchive, shareUrlForBrief } from './lib/briefArchive'
+import { generateLlmBriefDraft } from './lib/llmBrief'
 import { importSourceMaterial, sourceUrlFromText, type SourceImportType } from './lib/sourceImport'
 import {
   connectWallet,
@@ -58,6 +59,13 @@ function App() {
   const [brief, setBrief] = useState<MarketBrief | null>(null)
   const [briefSignal, setBriefSignal] = useState<MarketSignal | null>(null)
   const [isRunning, setIsRunning] = useState(true)
+  const [generationState, setGenerationState] = useState<
+    | { status: 'idle' }
+    | { status: 'deterministic' }
+    | { model: string; status: 'llm' }
+    | { operatorPrompt: string; reason: string; status: 'fallback' }
+    | { message: string; operatorPrompt?: string; status: 'error' }
+  >({ status: 'idle' })
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
   const [archiveState, setArchiveState] = useState<
     | { status: 'idle' }
@@ -142,7 +150,7 @@ function App() {
     }
   }, [])
 
-  async function runAgent(baseSignal?: MarketSignal) {
+  async function runAgent(baseSignal?: MarketSignal, options: { useLlm?: boolean } = {}) {
     setIsRunning(true)
     setCopyState('idle')
     setArchiveState({ status: 'idle' })
@@ -158,10 +166,42 @@ function App() {
         text: customText,
       } satisfies MarketSignal)
 
-    const result = await analyzeSignal(signal)
-    setBrief(result)
-    setBriefSignal(signal)
-    setIsRunning(false)
+    try {
+      if (options.useLlm) {
+        const llmResult = await generateLlmBriefDraft(signal)
+        if (llmResult.mode === 'llm') {
+          setGenerationState({ model: llmResult.model, status: 'llm' })
+          const result = await analyzeSignal(signal, { draft: llmResult.draft })
+          setBrief(result)
+          setBriefSignal(signal)
+          return
+        }
+
+        setGenerationState({
+          operatorPrompt: llmResult.operatorPrompt,
+          reason: llmResult.reason,
+          status: 'fallback',
+        })
+      } else {
+        setGenerationState({ status: 'deterministic' })
+      }
+
+      const result = await analyzeSignal(signal)
+      setBrief(result)
+      setBriefSignal(signal)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'LLM generation failed'
+      setGenerationState({
+        message,
+        operatorPrompt: `Manual review prompt: ${message}\n\nReview the raw signal, verify sources, then use the deterministic fallback before publishing.`,
+        status: 'error',
+      })
+      const result = await analyzeSignal(signal)
+      setBrief(result)
+      setBriefSignal(signal)
+    } finally {
+      setIsRunning(false)
+    }
   }
 
   function loadSample(signal: MarketSignal) {
@@ -425,6 +465,15 @@ function App() {
               {isRunning ? <Loader2 className="spin" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
               Run agent
             </button>
+            <button
+              className="secondary-action"
+              disabled={isRunning}
+              type="button"
+              onClick={() => void runAgent(undefined, { useLlm: true })}
+            >
+              {isRunning ? <Loader2 className="spin" aria-hidden="true" /> : <Network aria-hidden="true" />}
+              LLM assist
+            </button>
             <button className="secondary-action" type="button" onClick={() => loadSample(selectedSignal)}>
               <RefreshCw aria-hidden="true" />
               Reset
@@ -443,6 +492,8 @@ function App() {
 
           {brief ? (
             <>
+              <GenerationNotice state={generationState} brief={brief} />
+
               <div className="metric-row">
                 <div>
                   <span className="metric">{brief.probability}%</span>
@@ -688,6 +739,67 @@ function rationaleSourceFor(brief: MarketBrief, rationale: string, index: number
     brief.rationaleSources.find((source) => source.rationale === rationale) ??
     brief.rationaleSources[index] ??
     null
+  )
+}
+
+function GenerationNotice({
+  brief,
+  state,
+}: {
+  brief: MarketBrief
+  state:
+    | { status: 'idle' }
+    | { status: 'deterministic' }
+    | { model: string; status: 'llm' }
+    | { operatorPrompt: string; reason: string; status: 'fallback' }
+    | { message: string; operatorPrompt?: string; status: 'error' }
+}) {
+  if (state.status === 'llm') {
+    return (
+      <div className="generation-notice llm">
+        <Sparkles aria-hidden="true" />
+        <span>LLM draft · {state.model}</span>
+      </div>
+    )
+  }
+
+  if (state.status === 'fallback') {
+    return (
+      <div className="generation-notice fallback">
+        <AlertTriangle aria-hidden="true" />
+        <div>
+          <span>Deterministic fallback · {state.reason}</span>
+          <details>
+            <summary>Manual prompt</summary>
+            <pre>{state.operatorPrompt}</pre>
+          </details>
+        </div>
+      </div>
+    )
+  }
+
+  if (state.status === 'error') {
+    return (
+      <div className="generation-notice fallback">
+        <AlertTriangle aria-hidden="true" />
+        <div>
+          <span>Deterministic fallback · {state.message}</span>
+          {state.operatorPrompt ? (
+            <details>
+              <summary>Manual prompt</summary>
+              <pre>{state.operatorPrompt}</pre>
+            </details>
+          ) : null}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="generation-notice deterministic">
+      <ShieldCheck aria-hidden="true" />
+      <span>{brief.generationMode === 'llm' ? 'LLM draft' : 'Deterministic agent'}</span>
+    </div>
   )
 }
 

@@ -66,6 +66,47 @@ describe('agora agent', () => {
     expect(brief.evidencePacket.payload.sourceReferences).toEqual(brief.sourceReferences)
   })
 
+  it('applies a schema-validated LLM draft while keeping rule-built settlement and risk gates', async () => {
+    const brief = await analyzeSignal(
+      {
+        id: 'llm-assisted-signal',
+        receivedAt: '2026-05-15T08:00:00.000Z',
+        source: 'research',
+        sourceLabel: 'Arc desk note',
+        text:
+          'Multiple market desks expect Arc stablecoin-native trading agents to launch public prediction-market experiments next week.',
+        title: 'Arc desk note',
+      },
+      {
+        draft: {
+          confidence: 'medium',
+          headline: 'Arc agent launch window',
+          marketQuestion:
+            'Will at least one public Arc-native trading agent market experiment launch within 7 days?',
+          nextActions: ['Verify the official launch source.', 'Archive a second independent source.'],
+          probability: 64,
+          rationale: [
+            'The source gives a concrete one-week launch window.',
+            'Multiple desks are pointing at the same Arc-native market structure signal.',
+          ],
+          sourceLanguage: 'English',
+          timeframe: '7 days',
+          translatedThesis:
+            'Market desks expect Arc-native trading agents to launch public prediction-market experiments within one week.',
+        },
+      },
+    )
+
+    expect(brief.generationMode).toBe('llm')
+    expect(brief.headline).toBe('Arc agent launch window')
+    expect(brief.marketQuestion).toMatch(/^Will at least one public Arc-native/)
+    expect(brief.probability).toBe(64)
+    expect(brief.contractSketch.resolution).toContain('Use timestamped market data')
+    expect(brief.riskFlags).toContain('No numeric trigger was present in the raw signal.')
+    expect(brief.agentSteps.map((step) => step.label)).toContain('Draft')
+    expect(brief.evidencePacket.payload.agent).toBe('Agora Lens LLM-assisted agent v0.2')
+  })
+
   it('serializes evidence payloads with stable key ordering', () => {
     const left = stableStringify({ b: 2, a: { y: true, x: ['one', 'two'] } })
     const right = stableStringify({ a: { x: ['one', 'two'], y: true }, b: 2 })

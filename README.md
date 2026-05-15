@@ -22,6 +22,7 @@ The server exposes:
 
 - `GET /api/health`
 - `POST /api/briefs`
+- `POST /api/briefs/generate`
 - `GET /api/briefs/:id`
 - `GET /api/briefs`
 
@@ -53,6 +54,7 @@ Production safety defaults:
 - `AGORA_LENS_MAX_BODY_BYTES=262144`
 - `AGORA_LENS_POST_RATE_LIMIT=20`
 - `AGORA_LENS_RATE_LIMIT_WINDOW_MS=60000`
+- `AGORA_LENS_LLM_MODEL=gpt-5.4-mini`
 
 The server also sends basic security headers on API and static responses,
 including CSP, frame denial, `nosniff`, no-referrer, and a restrictive
@@ -114,6 +116,18 @@ cap response size, and preserve source references with URL, title, captured
 time, and optional published time. The generated market brief binds each
 rationale row back to those source references.
 
+## LLM Generation
+
+`POST /api/briefs/generate` can call the OpenAI Responses API from the server
+when `OPENAI_API_KEY` is configured. The browser never receives the API key.
+The LLM only drafts translation, market question, probability, rationale, and
+next actions through a strict JSON schema. Agora Lens still builds settlement
+rules, risk gates, source bindings, and the evidence hash locally.
+
+If the key is missing, the request fails, or the model output does not pass the
+schema validator, the API returns a deterministic-fallback response with a
+manual review prompt. The frontend then runs the existing deterministic agent.
+
 ## Verification
 
 ```bash
@@ -130,6 +144,6 @@ npm run build
 
 ## Current Scope
 
-- Local deterministic agent for demo reliability.
+- Optional server-side LLM drafting with deterministic fallback.
 - No real trades, funds, or private keys.
 - Evidence packet includes an Arc testnet chain ID and SHA-256 trace hash that can be anchored on Arc Testnet.

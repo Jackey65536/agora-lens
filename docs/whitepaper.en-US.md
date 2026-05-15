@@ -45,7 +45,7 @@ The current MVP opens directly into a working console. Users can select sample s
 
 ## Current Implementation
 
-The current product is a static frontend built with React, TypeScript, and Vite. For hackathon reliability, it does not depend on an external LLM API. It does not ask for wallet access, private keys, seed phrases, trading accounts, or funds.
+The current product is built with React, TypeScript, Vite, and a lightweight Node API. For hackathon reliability, it keeps the deterministic agent as the default and fallback path. When the server is configured with `OPENAI_API_KEY`, it can call an LLM from the server to draft translations, market questions, probabilities, and rationale. The browser never receives the LLM API key, and the rule layer still owns resolution criteria, risk gates, source binding, and evidence hashing. It does not ask for trading accounts, private keys, seed phrases, or funds.
 
 The core agent logic lives in `src/lib/agoraAgent.ts`.
 

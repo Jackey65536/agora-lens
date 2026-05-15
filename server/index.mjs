@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { createBriefArchive, getBriefArchive, listBriefArchives } from './briefStore.mjs'
+import { generateBriefDraft } from './llmBriefGenerator.mjs'
 import { createFixedWindowRateLimiter } from './rateLimiter.mjs'
 import { importSource } from './sourceImporter.mjs'
 
@@ -56,6 +57,15 @@ async function routeRequest(request, response) {
     const body = await readJson(request)
     const record = await createBriefArchive(body, { dataDir })
     writeJson(response, 201, { record })
+    return
+  }
+
+  if (url.pathname === '/api/briefs/generate' && request.method === 'POST') {
+    if (!allowWrite(request, response, 'too many brief generation requests')) return
+
+    const body = await readJson(request)
+    const result = await generateBriefDraft(body)
+    writeJson(response, 200, result)
     return
   }
 

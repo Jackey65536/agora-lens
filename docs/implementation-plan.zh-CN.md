@@ -250,9 +250,26 @@
 **描述：** LLM 负责翻译和草拟市场，规则层负责结算标准、风险和 JSON schema 校验。
 
 **验收标准：**
-- [ ] LLM 输出必须通过 schema
-- [ ] 失败时返回人工补充提示
-- [ ] 保留 deterministic agent 作为 fallback
+- [x] LLM 输出必须通过 schema
+- [x] 失败时返回人工补充提示
+- [x] 保留 deterministic agent 作为 fallback
+
+**验证：**
+- [x] `npm test -- server/llmBriefGenerator.test.mjs src/lib/llmBrief.test.ts src/lib/agoraAgent.test.ts`
+- [x] `npm test`
+- [x] `npm run lint`
+- [x] `npm run build`
+
+**文件：**
+- `server/llmBriefGenerator.mjs`
+- `server/llmBriefGenerator.test.mjs`
+- `server/index.mjs`
+- `src/lib/llmBrief.ts`
+- `src/lib/llmBrief.test.ts`
+- `src/lib/agoraAgent.ts`
+- `src/lib/agoraAgent.test.ts`
+- `src/App.tsx`
+- `src/App.css`
 
 ## 风险与缓解
 

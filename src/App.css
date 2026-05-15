@@ -24,6 +24,7 @@
 .button-row,
 .section-title,
 .evidence-actions,
+.generation-notice,
 .segmented-control,
 .wallet-actions,
 .wallet-heading,
@@ -56,6 +57,7 @@
 .section-title svg,
 .button-row svg,
 .evidence-actions svg,
+.generation-notice svg,
 .segmented-control svg,
 .wallet-actions svg,
 .wallet-heading svg,
@@ -261,6 +263,64 @@ button:focus-visible {
 
 .spin {
   animation: spin 900ms linear infinite;
+}
+
+.generation-notice {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  gap: 10px;
+  line-height: 1.35;
+  margin-bottom: 14px;
+  padding: 11px 12px;
+}
+
+.generation-notice.llm {
+  background: rgba(16, 122, 99, 0.1);
+  color: var(--green);
+}
+
+.generation-notice.deterministic {
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.generation-notice.fallback {
+  align-items: flex-start;
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--amber);
+}
+
+.generation-notice > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.generation-notice span {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.generation-notice details {
+  margin-top: 8px;
+}
+
+.generation-notice summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.generation-notice pre {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--ink);
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin: 8px 0 0;
+  max-height: 180px;
+  overflow: auto;
+  padding: 10px;
+  white-space: pre-wrap;
 }
 
 .metric-row {

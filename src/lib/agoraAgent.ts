@@ -30,6 +30,18 @@ export interface MarketSignal {
   text: string
 }
 
+export interface BriefDraft {
+  confidence: 'low' | 'medium' | 'high'
+  headline: string
+  marketQuestion: string
+  nextActions: string[]
+  probability: number
+  rationale: string[]
+  sourceLanguage: string
+  timeframe: string
+  translatedThesis: string
+}
+
 export interface ContractSketch {
   yes: string
   no: string
@@ -64,6 +76,7 @@ export interface EvidencePacket {
 
 export interface MarketBrief {
   id: string
+  generationMode: 'deterministic' | 'llm'
   headline: string
   category: string
   sourceLanguage: string
@@ -112,24 +125,32 @@ export const sampleSignals: MarketSignal[] = [
   },
 ]
 
-export async function analyzeSignal(signal: MarketSignal): Promise<MarketBrief> {
+export async function analyzeSignal(
+  signal: MarketSignal,
+  options: { draft?: BriefDraft } = {},
+): Promise<MarketBrief> {
   const normalized = normalize(signal.text)
-  const sourceLanguage = detectLanguage(normalized)
+  const draft = options.draft
+  const generationMode = draft ? 'llm' : 'deterministic'
+  const sourceLanguage = draft?.sourceLanguage ?? detectLanguage(normalized)
   const category = categorize(normalized)
-  const timeframe = pickTimeframe(normalized)
-  const translatedThesis = createThesis(normalized, sourceLanguage, category)
-  const probability = estimateProbability(normalized, signal.source)
-  const confidence = estimateConfidence(normalized, signal.source, probability)
-  const marketQuestion = buildQuestion(translatedThesis, category, timeframe)
+  const timeframe = draft?.timeframe ?? pickTimeframe(normalized)
+  const translatedThesis = draft?.translatedThesis ?? createThesis(normalized, sourceLanguage, category)
+  const probability = draft?.probability ?? estimateProbability(normalized, signal.source)
+  const confidence = draft?.confidence ?? estimateConfidence(normalized, signal.source, probability)
+  const marketQuestion = draft?.marketQuestion ?? buildQuestion(translatedThesis, category, timeframe)
   const contractSketch = buildContractSketch(translatedThesis, timeframe)
-  const rationale = buildRationale(normalized, category, probability)
+  const rationale = draft?.rationale ?? buildRationale(normalized, category, probability)
   const sourceReferences = normalizeSourceReferences(signal)
   const rationaleSources = buildRationaleSources(rationale, sourceReferences)
   const riskFlags = buildRiskFlags(normalized, sourceLanguage)
-  const nextActions = buildNextActions(category)
-  const agentSteps = buildAgentSteps(sourceLanguage, category, probability)
+  const nextActions = buildNextActions(category, draft)
+  const agentSteps = buildAgentSteps(sourceLanguage, category, probability, generationMode)
   const payload = {
-    agent: 'Agora Lens local agent v0.1',
+    agent:
+      generationMode === 'llm'
+        ? 'Agora Lens LLM-assisted agent v0.2'
+        : 'Agora Lens local agent v0.1',
     signalId: signal.id,
     generatedAt: new Date().toISOString(),
     marketQuestion,
@@ -143,7 +164,8 @@ export async function analyzeSignal(signal: MarketSignal): Promise<MarketBrief> 
 
   return {
     id: signal.id,
-    headline: signal.title,
+    generationMode,
+    headline: draft?.headline ?? signal.title,
     category,
     sourceLanguage,
     translatedThesis,
@@ -393,8 +415,9 @@ function buildRiskFlags(text: string, language: string): string[] {
   return flags
 }
 
-function buildNextActions(category: string): string[] {
+function buildNextActions(category: string, draft?: BriefDraft): string[] {
   const actions = [
+    ...(draft?.nextActions ?? []),
     'Find two independent public sources before surfacing this to users.',
     'Attach source URLs and freeze the evidence packet hash before any onchain action.',
   ]
@@ -405,16 +428,32 @@ function buildNextActions(category: string): string[] {
     actions.push('Map the thesis to a liquid venue, index, or oracle-backed data feed.')
   }
 
-  return actions
+  return [...new Set(actions)].slice(0, 5)
 }
 
-function buildAgentSteps(language: string, category: string, probability: number): AgentStep[] {
-  return [
+function buildAgentSteps(
+  language: string,
+  category: string,
+  probability: number,
+  generationMode: MarketBrief['generationMode'],
+): AgentStep[] {
+  const steps: AgentStep[] = [
     {
       label: 'Ingest',
       detail: `Normalized raw ${language} signal and removed noisy whitespace/links.`,
       status: 'complete',
     },
+  ]
+
+  if (generationMode === 'llm') {
+    steps.push({
+      label: 'Draft',
+      detail: 'Generated translation, market question, and rationale through the server-side LLM schema gate.',
+      status: 'complete',
+    })
+  }
+
+  steps.push(
     {
       label: 'Classify',
       detail: `Mapped signal to ${category}.`,
@@ -430,5 +469,7 @@ function buildAgentSteps(language: string, category: string, probability: number
       detail: 'Prepared a hashable trace packet for Arc-native evidence anchoring.',
       status: 'watch',
     },
-  ]
+  )
+
+  return steps
 }

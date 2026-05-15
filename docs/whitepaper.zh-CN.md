@@ -43,7 +43,7 @@ Agora Lens 是一个 market-intelligence agent，而不是交易机器人。它�
 
 ## 当前实现
 
-当前版本是一个纯前端静态应用，使用 React、TypeScript 和 Vite 构建。为了保证 hackathon demo 稳定，它没有依赖外部 LLM API，也不会触碰真实钱包、私钥、资金或交易账户。
+当前版本使用 React、TypeScript、Vite 和轻量 Node API 构建。为了保证 hackathon demo 稳定，它保留 deterministic agent 作为默认和 fallback；当服务端配置 `OPENAI_API_KEY` 时，可以通过服务端调用 LLM 草拟翻译、市场问题、概率和 rationale。浏览器不会接触 LLM API key，规则层仍负责结算条件、风险闸门、来源绑定和证据哈希。它不会触碰真实交易账户、私钥、助记词或资金。
 
 核心逻辑位于 `src/lib/agoraAgent.ts`。处理流程如下：
 
